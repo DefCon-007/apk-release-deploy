@@ -86,4 +86,5 @@ python3 deploy.py \
     --template.file=template_file \
     --zapier.hook=$ZAPIER_HOOK \
     --email.to=me@myorg.com,them@myorg.com
+    --slack-webhook.url=$SLACK_WEBHOOK_URL
 ```
