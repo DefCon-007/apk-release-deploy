@@ -241,6 +241,50 @@ def get_email(app_name, app_version, app_url, changes, template_file_path):
     return subject.rstrip(), body.rstrip()
 
 
+def send_slack_notification(webhook_url, file_url, changes, app_version):
+    file_url = file_url.strip()
+    file_url = file_url + "?" if file_url[-1] != "?" else file_url
+    download_url = file_url + "&dl=1"
+    data = {
+	"blocks": [
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "A new version of Anveshan android app has been released. Version: *{}*\n\nChanges:\n{}".format(app_version, changes)
+            }
+        },
+        {
+            "type": "divider"
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "Download the APK file from here."
+            },
+            "accessory": {
+                "type": "button",
+                "text": {
+                        "type": "plain_text",
+                        "text": ":envelope_with_arrow:  Download",
+                        "emoji": True
+                },
+                "url": download_url
+            }
+        }
+	]
+    }
+
+    response = requests.post(
+        webhook_url, data=json.dumps(data),
+        headers={'Content-Type': 'application/json'}
+    )
+    print(response.status_code)
+    print(response.text)
+
+
+
 if __name__ == '__main__':
     # Command line arguments
     parser = argparse.ArgumentParser()
@@ -252,6 +296,7 @@ if __name__ == '__main__':
     parser.add_argument('--dropbox.folder', dest='dropbox_folder', help='dropbox target folder', required=True)
     parser.add_argument('--zapier.hook', dest='zapier_hook', help='zapier email web hook', required=True)
     parser.add_argument('--email.to', dest='email_to', help='email recipients', required=True)
+    parser.add_argument('--slack-webhook.url', dest='slack_webhook_url', help='Slack Incoming webhook URL', required=True)
 
     options = parser.parse_args()
 
@@ -277,6 +322,9 @@ if __name__ == '__main__':
     if subject == None or body == None:
         exit(TEMPLATE_ERROR_CODE)
     
+    send_slack_notification(options.slack_webhook_url,
+                            file_url, latest_changes, app_version)
+
     # Send email with release data
     if not send_email(options.zapier_hook, options.email_to, subject, body):
         exit(ZAPIER_ERROR_CODE)
